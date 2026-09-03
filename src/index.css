@@ -1,0 +1,30 @@
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --text-primary: #1a1a1a;
+  --text-secondary: #555;
+  --text-muted: #999;
+  --text-accent: #e85d26;
+  --surface-1: #f9f9f9;
+  --surface-2: #f0f0f0;
+  --border: #e0e0e0;
+  --border-strong: #ccc;
+  --border-accent: #e85d26;
+  --bg-accent: #fff4f0;
+  --radius: 6px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+.font-name {
+  user-select: text;
+}
+
+body {
+  background: #fff;
+  padding: 2rem;
+}
