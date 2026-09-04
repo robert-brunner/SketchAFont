@@ -746,6 +746,121 @@ async function compareGlyphsToFonts(glyphs, onProgress) {
 // ─── COMPONENT ──────────────────────────────────────────────────────────────
 
 
+// Runs animation exactly once per page load — module var resets on every hard load/refresh.
+let _animPlayed = false;
+
+function Logo({ isSearching }) {
+  const [typed, setTyped] = useState(_animPlayed ? 4 : 0);
+  const [done,  setDone]  = useState(_animPlayed);
+  const [hover, setHover] = useState(false);
+  const SK = ["s","k","e","t","c","h"];
+  const SK_X = [4, 28, 56, 80, 100, 124];         // x of each letter in "sketch"
+  const STEP = 0.16;                               // seconds between letters
+  const WRITE_T = SK.length * STEP + 0.35;         // when handwriting finishes
+  const FONT = [
+    { ch: "F", font: "'Playfair Display', serif", fill: "#1a1a1a", size: 52, x: 218 },
+    { ch: "O", font: "'Bebas Neue', sans-serif",  fill: "#e85d26", size: 52, x: 252 },
+    { ch: "N", font: "'Lobster', cursive",         fill: "#1a1a1a", size: 48, x: 284 },
+    { ch: "T", font: "'Space Mono', monospace",   fill: "#2d2d2d", size: 44, x: 324 },
+  ];
+  const CURSOR_X = [218, 252, 284, 324, 354];
+
+  useEffect(() => {
+    if (_animPlayed) return;
+    let i = 0, iv;
+    const t = setTimeout(() => {
+      iv = setInterval(() => {
+        i++; setTyped(i);
+        if (i >= FONT.length) {
+          clearInterval(iv);
+          setTimeout(() => {
+            setDone(true);
+            _animPlayed = true;
+          }, 700);
+        }
+      }, 140);
+    }, WRITE_T * 1000 + 150);
+    return () => { clearTimeout(t); clearInterval(iv); };
+  }, []);
+
+  // pencil path keyframes: follows the letters, then parks after "sketch"
+  const pencilKeys = SK_X.map((x, i) => `${Math.round((i / SK.length) * 80)}% { transform: translate(${x + 14}px, 34px) rotate(-35deg); }`).join("\n");
+
+  return (
+    <div style={{ marginBottom: 28, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Bebas+Neue&family=Playfair+Display:wght@700&family=Lobster&family=Space+Mono:wght@700&display=swap');
+        @keyframes sk-write { to { stroke-dashoffset: 0; } }
+        @keyframes sk-fill  { to { fill-opacity: 1; } }
+        @keyframes ul-draw  { to { stroke-dashoffset: 0; } }
+        @keyframes pencil-travel {
+          ${pencilKeys}
+          88%  { transform: translate(172px, 26px) rotate(-35deg); }
+          100% { transform: translate(168px, 28px) rotate(-35deg); }
+        }
+        @keyframes pencil-scribble {
+          0%   { transform: translate(168px,28px) rotate(-35deg); }
+          25%  { transform: translate(163px,32px) rotate(-42deg); }
+          50%  { transform: translate(170px,30px) rotate(-30deg); }
+          75%  { transform: translate(164px,27px) rotate(-40deg); }
+          100% { transform: translate(168px,28px) rotate(-35deg); }
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+        .sk-letter {
+          font-family: 'Caveat', cursive; font-size: 46px; font-weight: 700;
+          fill: #2d2d2d; fill-opacity: 0;
+          stroke: #2d2d2d; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+          stroke-dasharray: 160; stroke-dashoffset: 160;
+          animation: sk-write 0.42s ease-out forwards, sk-fill 0.15s linear forwards;
+        }
+        .ul { stroke-dasharray: 200; stroke-dashoffset: 200; animation: ul-draw 0.5s ease forwards; animation-delay: ${WRITE_T - 0.15}s; }
+        .pencil { transform: translate(${SK_X[0] + 14}px, 34px) rotate(-35deg); animation: pencil-travel ${WRITE_T}s linear forwards; }
+        .pencil.done { animation: none; transform: translate(168px,28px) rotate(-35deg); }
+        .pencil.hover { animation: pencil-scribble 0.45s ease-in-out infinite; }
+        .cursor { animation: blink 0.8s step-end infinite; }
+      `}</style>
+
+      <svg viewBox="0 0 480 76" width="480" height="76" style={{ maxWidth: "100%", overflow: "visible" }}>
+        {SK.map((ch, i) => (
+          <text key={i} className={_animPlayed ? undefined : "sk-letter"} x={SK_X[i]} y="52"
+            style={_animPlayed
+              ? { fontFamily: "'Caveat', cursive", fontSize: 46, fontWeight: 700, fill: "#2d2d2d" }
+              : { animationDelay: `${i * STEP}s, ${i * STEP + 0.3}s` }}>{ch}</text>
+        ))}
+
+        <path className={_animPlayed ? undefined : "ul"} d="M 4 58 Q 45 63 85 60 Q 125 57 165 61 Q 180 62 188 59"
+          stroke="#bbb" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.7"/>
+
+        <text x="196" y="56" fontFamily="'Caveat', cursive" fontSize="28" fill="#999" opacity={_animPlayed ? 1 : 0}>
+          {!_animPlayed && <animate attributeName="opacity" from="0" to="1" begin={`${WRITE_T}s`} dur="0.15s" fill="freeze" />}a
+        </text>
+
+        <g className={`pencil${(done || _animPlayed) && !isSearching && !hover ? " done" : ""}${hover || isSearching ? " hover" : ""}`}
+          onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+          <rect x="-6" y="-6" width="20" height="38" fill="transparent" />
+          <rect x="0" y="0" width="7" height="19" rx="1.5" fill="#f0c040" />
+          <polygon points="0,19 7,19 3.5,26" fill="#e0a090" />
+          <rect x="0" y="0" width="7" height="3.5" rx="1" fill="#999" />
+          <rect x="0" y="17" width="7" height="2" fill="#d4a060" />
+        </g>
+
+        {FONT.map(({ ch, font, fill, size, x }, i) => (
+          <text key={ch} x={x} y="57" fontFamily={font} fontSize={size} fontWeight="700" fill={fill}
+            style={{ opacity: typed > i ? 1 : 0 }}>{ch}</text>
+        ))}
+        {!done && typed >= 0 && (
+          <rect className="cursor" x={CURSOR_X[typed]} y="18" width="3" height="40" fill="#e85d26"
+            style={{ opacity: typed === 0 && !hover ? 0.001 : 1 }} />
+        )}
+      </svg>
+
+      <div style={{ fontSize: 12, color: "#aaa", letterSpacing: "0.12em", marginTop: -2, textAlign: "center" }}>
+        www.sketchafont.com
+      </div>
+    </div>
+  );
+}
+
 export default function FontSketchMatcher() {
   const [letter, setLetter] = useState("A");
   const [isUpper, setIsUpper] = useState(true);
@@ -1021,108 +1136,6 @@ export default function FontSketchMatcher() {
   const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
   // Logo component
-  const Logo = () => {
-    const [typed, setTyped] = useState(0);
-    const [done, setDone] = useState(false);
-    const [hover, setHover] = useState(false);
-    const SK = ["s","k","e","t","c","h"];
-    const SK_X = [4, 28, 56, 80, 100, 124];         // x of each letter in "sketch"
-    const STEP = 0.16;                               // seconds between letters
-    const WRITE_T = SK.length * STEP + 0.35;         // when handwriting finishes
-    const FONT = [
-      { ch: "F", font: "'Playfair Display', serif", fill: "#1a1a1a", size: 52, x: 218 },
-      { ch: "O", font: "'Bebas Neue', sans-serif",  fill: "#e85d26", size: 52, x: 252 },
-      { ch: "N", font: "'Lobster', cursive",         fill: "#1a1a1a", size: 48, x: 284 },
-      { ch: "T", font: "'Space Mono', monospace",   fill: "#2d2d2d", size: 44, x: 324 },
-    ];
-    const CURSOR_X = [218, 252, 284, 324, 354];
-
-    useEffect(() => {
-      let i = 0, iv;
-      const t = setTimeout(() => {
-        iv = setInterval(() => {
-          i++; setTyped(i);
-          if (i >= FONT.length) { clearInterval(iv); setTimeout(() => setDone(true), 700); }
-        }, 140);
-      }, WRITE_T * 1000 + 150);
-      return () => { clearTimeout(t); clearInterval(iv); };
-    }, []);
-
-    // pencil path keyframes: follows the letters, then parks after "sketch"
-    const pencilKeys = SK_X.map((x, i) => `${Math.round((i / SK.length) * 80)}% { transform: translate(${x + 14}px, 34px) rotate(-35deg); }`).join("\n");
-
-    return (
-      <div style={{ marginBottom: 28, display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Bebas+Neue&family=Playfair+Display:wght@700&family=Lobster&family=Space+Mono:wght@700&display=swap');
-          @keyframes sk-write { to { stroke-dashoffset: 0; } }
-          @keyframes sk-fill  { to { fill-opacity: 1; } }
-          @keyframes ul-draw  { to { stroke-dashoffset: 0; } }
-          @keyframes pencil-travel {
-            ${pencilKeys}
-            88%  { transform: translate(172px, 26px) rotate(-35deg); }
-            100% { transform: translate(168px, 28px) rotate(-35deg); }
-          }
-          @keyframes pencil-scribble {
-            0%   { transform: translate(168px,28px) rotate(-35deg); }
-            25%  { transform: translate(163px,32px) rotate(-42deg); }
-            50%  { transform: translate(170px,30px) rotate(-30deg); }
-            75%  { transform: translate(164px,27px) rotate(-40deg); }
-            100% { transform: translate(168px,28px) rotate(-35deg); }
-          }
-          @keyframes blink { 50% { opacity: 0; } }
-          .sk-letter {
-            font-family: 'Caveat', cursive; font-size: 46px; font-weight: 700;
-            fill: #2d2d2d; fill-opacity: 0;
-            stroke: #2d2d2d; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
-            stroke-dasharray: 160; stroke-dashoffset: 160;
-            animation: sk-write 0.42s ease-out forwards, sk-fill 0.15s linear forwards;
-          }
-          .ul { stroke-dasharray: 200; stroke-dashoffset: 200; animation: ul-draw 0.5s ease forwards; animation-delay: ${WRITE_T - 0.15}s; }
-          .pencil { transform: translate(${SK_X[0] + 14}px, 34px) rotate(-35deg); animation: pencil-travel ${WRITE_T}s linear forwards; }
-          .pencil.done { animation: none; transform: translate(168px,28px) rotate(-35deg); }
-          .pencil.hover { animation: pencil-scribble 0.45s ease-in-out infinite; }
-          .cursor { animation: blink 0.8s step-end infinite; }
-        `}</style>
-
-        <svg viewBox="0 0 480 76" width="480" height="76" style={{ maxWidth: "100%", overflow: "visible" }}>
-          {SK.map((ch, i) => (
-            <text key={i} className="sk-letter" x={SK_X[i]} y="52"
-              style={{ animationDelay: `${i * STEP}s, ${i * STEP + 0.3}s` }}>{ch}</text>
-          ))}
-
-          <path className="ul" d="M 4 58 Q 45 63 85 60 Q 125 57 165 61 Q 180 62 188 59"
-            stroke="#bbb" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.7"/>
-
-          <text x="196" y="56" fontFamily="'Caveat', cursive" fontSize="28" fill="#999" opacity="0">
-            <animate attributeName="opacity" from="0" to="1" begin={`${WRITE_T}s`} dur="0.15s" fill="freeze" />a
-          </text>
-
-          <g className={`pencil${done ? " done" : ""}${hover ? " hover" : ""}`}
-            onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-            <rect x="-6" y="-6" width="20" height="38" fill="transparent" />
-            <rect x="0" y="0" width="7" height="19" rx="1.5" fill="#f0c040" />
-            <polygon points="0,19 7,19 3.5,26" fill="#e0a090" />
-            <rect x="0" y="0" width="7" height="3.5" rx="1" fill="#999" />
-            <rect x="0" y="17" width="7" height="2" fill="#d4a060" />
-          </g>
-
-          {FONT.map(({ ch, font, fill, size, x }, i) => (
-            <text key={ch} x={x} y="57" fontFamily={font} fontSize={size} fontWeight="700" fill={fill}
-              style={{ opacity: typed > i ? 1 : 0 }}>{ch}</text>
-          ))}
-          {!done && typed >= 0 && (
-            <rect className="cursor" x={CURSOR_X[typed]} y="18" width="3" height="40" fill="#e85d26"
-              style={{ opacity: typed === 0 && !hover ? 0.001 : 1 }} />
-          )}
-        </svg>
-
-        <div style={{ fontSize: 12, color: "#aaa", letterSpacing: "0.12em", marginTop: -2, textAlign: "center" }}>
-          www.sketchafont.com
-        </div>
-      </div>
-    );
-  };
 
   // Loader with cycling font characters
   const Loader = () => {
@@ -1183,7 +1196,7 @@ export default function FontSketchMatcher() {
 
   return (
     <div style={{ padding: "1.5rem 2rem", fontFamily: "var(--font-sans)", maxWidth: 860, margin: "0 auto" }}>
-      <Logo />
+      <Logo isSearching={analyzing || imgAnalyzing} />
 
       {/* Controls row */}
       <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap", alignItems: "flex-end", justifyContent: "center" }}>
