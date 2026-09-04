@@ -2,7 +2,7 @@
 
 **[www.sketchafont.com](https://www.sketchafont.com)**
 
-![Sketch-A-Font screenshot](sketchDemo.png)
+![Sketch-A-Font screenshot](public/sketchDemo.png)
 
 Draw a letter by hand and find the closest matching Google Fonts — or paste a screenshot of text and identify the font from the image. Everything runs in your browser. No account, no API key, no cost.
 
