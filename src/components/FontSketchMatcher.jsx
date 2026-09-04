@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useFaviconAnimation } from "../useFaviconAnimation";
 
 const GOOGLE_FONTS = [
   { name: "ABeeZee", category: "sans-serif", traits: { hasSerif: false, isScript: false, isMono: false, isSlab: false, isDisplay: false, isGeometric: true, widthRatio: 0.62, xHeight: 0.72, isCondensed: false, highContrast: false, isBold: false, isElegant: false, isRounded: false } },
@@ -899,6 +900,8 @@ export default function FontSketchMatcher() {
   const [imgProgress, setImgProgress] = useState({ pct: 0, font: "" });
   const [imgNote, setImgNote] = useState("");
   const imgFileRef = useRef(null);
+
+  useFaviconAnimation(analyzing || imgAnalyzing);
 
   const importImageTool = useCallback(async (blob) => {
     try {
