@@ -1,5 +1,5 @@
 import Font from "./components/FontSketchMatcher";
-import TraceBadge from "./components/signature";
+import Signature from "./components/Signature.jsx";
 
 const App = () => {
 
